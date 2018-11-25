@@ -1,11 +1,14 @@
 ---
 title: "Comparing predicted to actual votes for the 2018 Toronto mayoral election"
 author: "PsephoAnalytics"
-date: '`r Sys.Date()`'
-output: html_notebook
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+    css: psepho_styles.css
 ---
 
-```{r setup, echo = FALSE, message = FALSE}
+```{r setup, include = FALSE, echo = FALSE}
 library(magrittr)
 library(toVotes)
 predictions <- readr::read_csv("data/predictions.csv") %>%
@@ -19,10 +22,10 @@ if(file.exists("data/gct_000b11a_e.zip")) {
   # Nothing to do
 }  else {
   download.file("http://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/files-fichiers/gct_000b11a_e.zip",
-                destfile = "data/gct_000b11a_e.zip")
+                destfile = "data/gct_000b11a_e.zip", quiet = TRUE)
   unzip("data/gct_000b11a_e.zip", exdir="data/gct")
 }
-census_tracts <- sf::st_read("data/gct", layer = "gct_000b11a_e") %>%
+census_tracts <- sf::read_sf("data/gct", layer = "gct_000b11a_e") %>%
   sf::st_transform(crs = "+init=epsg:4326")
 
 # Toronto wards
@@ -30,10 +33,10 @@ if(file.exists("data/voting_location_2018_wgs84.zip")) {
   # Nothing to do
 }  else {
   download.file("http://opendata.toronto.ca/gcc/voting_location_2018_wgs84.zip",
-                destfile = "data/voting_location_2018_wgs84.zip")
+                destfile = "data/voting_location_2018_wgs84.zip", quiet = TRUE)
   unzip("data/voting_location_2018_wgs84.zip", exdir="data/voting_location_2018_wgs84")
 }
-toronto_wards <- sf::st_read("data/voting_location_2018_wgs84", layer = "VOTING_LOCATION_2018_WGS84") %>%
+toronto_wards <- sf::read_sf("data/voting_location_2018_wgs84", layer = "VOTING_LOCATION_2018_WGS84") %>%
   sf::st_transform(crs = "+init=epsg:4326")
 
 # Subset the CTs to just those in Toronto
@@ -86,18 +89,24 @@ Our [predictions](http://www.psephoanalytics.ca/2018/10/a-new-approach-to-predic
 
 Now that the [final results](https://www.toronto.ca/city-government/elections/general-information/election-results/) are available, we can see how our predictions performed at the census tract level.
 
-```{r histogram, fig.cap="Distribution of the difference between the predicted and actual proportion of votes for Keesmaat", message=FALSE, warning=FALSE}
+For this analysis, we restrict the comparison to just Tory and Keesmaat, as they were the only two major candidates and the only two for which we estimated vote share. Given this, we start by just plotting the difference between the actual votes and the predicted votes for Keesmaat. The distribution for Tory is simply the mirror image, since their combined share of votes always equals 100%.
+
+```{r histogram, fig.cap="Distribution of the difference between the predicted and actual proportion of votes for Keesmaat", message = FALSE, warning = FALSE, echo = FALSE}
 ggplot2::ggplot(data = dplyr::filter(compare, candidate == "Keesmaat"), ggplot2::aes(difference)) +
   ggplot2::geom_histogram() +
   ggplot2::geom_vline(xintercept = 0, color = "orange", size = 2) +
   ggplot2::xlab("Difference from actual results") +
+  ggplot2::scale_x_continuous(labels = scales::percent) +
   ggplot2::ylab("") +
   ggplot2::annotate("text", x = 0.25, y = 44, label = "Underestimated") +
   ggplot2::annotate("text", x = -0.35, y = 44, label = "Overestimated")
 ```
 
+The mean difference from the actual results for Keesmaat is `r scales::percent(mean(compare$difference[compare$candidate == "Keesmaat"], na.rm = TRUE), accuracy = 3)`, which means that, on average, we slightly overestimated support for Keesmaat. However, as the histogram shows, there is significant variation in this difference across census tracts with the differences slightly skewed towards overestimating Keesmaat's support.
 
-```{r map, fig.cap="The distribution of the difference between the predicted and actual proportion of votes by census tract", message=FALSE, warning=FALSE}
+To better understand this variation, we can look at a plot of the geographical distribution of the differences. In this figure, we show both Keesmaat and Tory. Although the plots are just inverted versions of each other (since the proportion of votes always sums to 100%), seeing them side by side helps illuminate the geographical structure of the differences.
+
+```{r map, fig.cap="The distribution of the difference between the predicted and actual proportion of votes by census tract", message = FALSE, warning = FALSE, echo = FALSE, fig.width=12}
 geo_compare <- ct_to %>%
   dplyr::left_join(compare) %>%
   dplyr::select(difference, candidate)
@@ -109,3 +118,8 @@ ggplot2::ggplot(data = geo_compare) +
   ggplot2::theme(axis.text = ggplot2::element_blank(),
                  axis.ticks = ggplot2::element_blank())
 ```
+
+The overall distribution of differences doesn't have a clear geographical bias, with the exception of the north-east corner and across the top of the city. In some sense, this is good, as it shows our agent-based model isn't systematically biased to any particular census tract. Rather, refinements to the model will improve accuracy across _all_ census tracts.
+
+We'll write details about our new agent-based approach soon. In the meantime, these results show that the approach has promise, given that it used only a few demographic characteristics and no polls. Now we're particularly motivated to gather up _much_ more data to enrich our agents' behaviour and make better predictions. 
+
