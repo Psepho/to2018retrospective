@@ -106,7 +106,7 @@ The mean difference from the actual results for Keesmaat is `r scales::percent(m
 
 To better understand this variation, we can look at a plot of the geographical distribution of the differences. In this figure, we show both Keesmaat and Tory. Although the plots are just inverted versions of each other (since the proportion of votes always sums to 100%), seeing them side by side helps illuminate the geographical structure of the differences.
 
-```{r map, fig.cap="The distribution of the difference between the predicted and actual proportion of votes by census tract", message = FALSE, warning = FALSE, echo = FALSE, fig.width=12}
+```{r map, fig.cap="The distribution of the difference between the predicted and actual proportion of votes by census tract", message = FALSE, warning = FALSE, echo = FALSE}
 geo_compare <- ct_to %>%
   dplyr::left_join(compare) %>%
   dplyr::select(difference, candidate)
@@ -119,7 +119,7 @@ ggplot2::ggplot(data = geo_compare) +
                  axis.ticks = ggplot2::element_blank())
 ```
 
-The overall distribution of differences doesn't have a clear geographical bias, with the exception of the north-east corner and across the top of the city. In some sense, this is good, as it shows our agent-based model isn't systematically biased to any particular census tract. Rather, refinements to the model will improve accuracy across _all_ census tracts.
+The overall distribution of differences doesn't have a clear geographical bias. In some sense, this is good, as it shows our agent-based model isn't systematically biased to any particular census tract. Rather, refinements to the model will improve accuracy across _all_ census tracts.
 
 We'll write details about our new agent-based approach soon. In the meantime, these results show that the approach has promise, given that it used only a few demographic characteristics and no polls. Now we're particularly motivated to gather up _much_ more data to enrich our agents' behaviour and make better predictions. 
 
