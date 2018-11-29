@@ -10,6 +10,7 @@ output:
 
 ```{r setup, include = FALSE, echo = FALSE}
 library(magrittr)
+devtools::install_github("psepho/toVotes", ref = "2018_mayor")
 library(toVotes)
 predictions <- readr::read_csv("data/predictions.csv") %>%
   dplyr::filter(CT != "Grand Total") %>%
